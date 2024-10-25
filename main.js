@@ -6,8 +6,11 @@
     let isRotating = false;
     const wheel = $('.wheel');
     const btnWheel = $('.btn--wheel');
-    const showMsg = $('.msg');
 
+    // Modal elements
+    const winnerModal = $('#winnerModal');
+    const winnerMessage = $('#winnerMessage');
+    
     // Danh sách phần thưởng
     let listGift = [
         { text: '1' },
@@ -17,6 +20,8 @@
         { text: '5' },
         { text: '6' },
     ];
+
+    winnerModal.style.display = 'none';
 
     const resetWheel = () => {
         wheel.innerHTML = '';
@@ -37,43 +42,7 @@
 
     createWheel();
 
-    // Thêm phần thưởng mới
-    const giftNameInput = document.getElementById('giftName');
-    const addGiftBtn = document.getElementById('addGift');
-    const removeGiftBtn = document.getElementById('removeGift');
-
-    addGiftBtn.addEventListener('click', () => {
-        const names = giftNameInput.value.trim().split(',').map(name => name.trim());
-
-        names.forEach(name => {
-            if (name) {
-                listGift.push({ text: name });
-                alert(`Đã thêm phần thưởng: ${name}`);
-            }
-        });
-
-        if (names.length > 0) {
-            resetWheel();
-        } else {
-            alert('Vui lòng nhập tên hợp lệ!');
-        }
-
-        giftNameInput.value = '';
-    });
-
-    // Xóa phần thưởng cuối cùng
-    removeGiftBtn.addEventListener('click', () => {
-        if (listGift.length > 0) {
-            const removedGift = listGift.pop();
-            alert(`Đã xóa phần thưởng: ${removedGift.text}`);
-            resetWheel();
-        } else {
-            alert('Không còn phần thưởng nào để xóa!');
-        }
-    });
-
     const start = () => {
-        showMsg.innerHTML = '';
         isRotating = true;
         const random = Math.random();
         const gift = getGift(random);
@@ -99,14 +68,38 @@
     };
 
     const showGift = gift => {
-        let timer = setTimeout(() => {
+        setTimeout(() => {
             isRotating = false;
-            showMsg.innerHTML = `Chúc mừng bạn đã nhận được "${gift.text}"`;
-            clearTimeout(timer);
+
+
+            // Cập nhật thông điệp và hiển thị modal
+            winnerMessage.innerHTML = `Chúc mừng bạn đã nhận được "${gift.text}"`;
+            winnerModal.style.display = 'flex';
         }, timeRotate);
     };
 
+    // Đóng modal khi nhấn bên ngoài modal
+    window.addEventListener('click', (event) => {
+        if (event.target === winnerModal) {
+            winnerModal.style.display = 'none';
+        }
+    });
+
     btnWheel.addEventListener('click', () => {
         !isRotating && start();
+    });
+
+    const giftTextarea = $('#giftTextarea');
+    const updateGiftsBtn = $('#updateGifts');
+
+    updateGiftsBtn.addEventListener('click', () => {
+        const gifts = giftTextarea.value.trim().split('\n').map(item => item.trim()).filter(item => item);
+        if (gifts.length > 0) {
+            listGift = gifts.map(text => ({ text }));
+            alert('Danh sách phần thưởng đã được cập nhật!');
+            resetWheel();
+        } else {
+            alert('Vui lòng nhập ít nhất một phần thưởng!');
+        }
     });
 })();
