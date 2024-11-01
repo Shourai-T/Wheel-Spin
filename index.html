@@ -5,36 +5,38 @@
     <meta charset="UTF-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Document</title>
+    <title>Spin Wheel</title>
     <link rel="stylesheet" href="./style.css" />
 </head>
 
 <body>
     <main>
         <section class="main">
-            <span>
-                <ul class="wheel"></ul>
-            </span>
-            <button class="btn--wheel">Quay thưởng</button>
+            <div class="triangle"></div>
+            <canvas id="canvas" width="500" height="500"></canvas>
+            <button class="btn--wheel" onclick="spin()">Quay thưởng</button>
         </section>
         <nav class="controls">
-            <textarea id="giftTextarea" rows="4" cols="30"
-                placeholder="Nhập phần thưởng, mỗi dòng là một phần thưởng"></textarea>
-            <button id="updateGifts">Cập nhật Phần Thưởng</button>
-            <!-- <input type="text" id="giftName" placeholder="Tên phần thưởng" />
-            <button id="addGift">Thêm</button>
-            <button id="removeGift">Xóa</button> -->
+            <textarea id="giftTextarea" rows="4" cols="30" placeholder="Nhập phần thưởng, mỗi dòng là một phần thưởng">Giải Nhất
+Giải Nhì
+Giải Ba
+Khuyến Khích</textarea>
+            <button id="updateGifts" onclick="createWheel()">Cập nhật Phần Thưởng</button>
         </nav>
 
         <!-- Modal popup hiển thị người thắng -->
-        <div id="winnerModal" class="modal">
+        <div id="winnerModal" class="modal" style="display:none;">
             <div class="modal-content">
                 <h2>Chúc mừng!</h2>
                 <p id="winnerMessage"></p>
+                <div class="modal-buttons">
+                    <button id="deletePrize" onclick="deletePrize()">Xóa Phần Thưởng</button>
+                    <button id="closeModal" onclick="closeModal()">Hủy</button>
+                </div>
             </div>
         </div>
     </main>
-    <script src="./main.js"></script>
 </body>
+<script src="main.js"></script>
 
 </html>
