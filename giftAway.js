@@ -39,9 +39,9 @@ let maxRotation = 0;
 let pause = false;
 let lastWinner = null;
 
-document.addEventListener("DOMContentLoaded", () => {
-    // Khởi tạo các phần thưởng mặc định từ textarea
-    createWheel();
+document.addEventListener("DOMContentLoaded", async () => {
+    await fetchPrizes();  // Tải danh sách phần thưởng từ cơ sở dữ liệu
+    createWheel();        // Vẽ vòng quay với danh sách phần thưởng
 });
 
 const drawWheel = () => {
@@ -74,13 +74,12 @@ const drawWheel = () => {
 
         // Điều chỉnh font chữ dựa trên độ dài của text
         let fontSize = 24;
-        if (items[i].length > 15) fontSize = 16; // Giảm font nếu text dài
-        else if (items[i].length > 10) fontSize = 20; // Font trung bình cho text vừa
+        if (items[i].length > 15) fontSize = 16;
+        else if (items[i].length > 10) fontSize = 20;
 
         ctx.font = `bold ${fontSize}px serif`;
         ctx.fillStyle = color.r > 150 || color.g > 150 || color.b > 150 ? "#000" : "#fff";
         
-        // Giới hạn độ dài của text và thêm dấu "..." nếu text quá dài
         let displayText = items[i].length > 20 ? items[i].slice(0, 17) + "..." : items[i];
         ctx.fillText(displayText, 130, 10);
         ctx.restore();
@@ -88,10 +87,9 @@ const drawWheel = () => {
         itemDegs[item] = { startDeg, endDeg };
         startDeg += step;
     });
-}
+};
 
 const createWheel = () => {
-    items = document.getElementById("giftTextarea").value.trim().split("\n").filter(Boolean);
     step = 360 / items.length;
     colors = items.map(() => randomColor());
     itemDegs = {};
@@ -103,24 +101,50 @@ const resetWheel = () => {
     createWheel();
 };
 
+// const checkWinner = () => {
+//     const winningDeg = (currentDeg % 360 + 360) % 360;
+//     const triangleDeg = 360;
+
+//     items.some(item => {
+//         const { startDeg, endDeg } = itemDegs[item];
+//         const start = startDeg % 360;
+//         const end = endDeg % 360;
+//         const isWinner = triangleDeg >= start && triangleDeg < end || (start > end && (triangleDeg >= start || triangleDeg < end));
+//         if (isWinner) {
+//             document.getElementById("winnerMessage").innerText = `Bạn đã trúng "${item}"!`;
+//             document.getElementById("winnerModal").style.display = 'flex';
+//             lastWinner = item;
+//             updatePrize(item); // Gọi API để cập nhật số lượng phần thưởng
+//             return true;
+//         }
+//         return false;
+//     });
+// };
+
 const checkWinner = () => {
     const winningDeg = (currentDeg % 360 + 360) % 360;
     const triangleDeg = 360;
 
-    items.some(item => {
-        const { startDeg, endDeg } = itemDegs[item];
-        const start = startDeg % 360;
-        const end = endDeg % 360;
-        const isWinner = triangleDeg >= start && triangleDeg < end || (start > end && (triangleDeg >= start || triangleDeg < end));
-        if (isWinner) {
-            document.getElementById("winnerMessage").innerText = `Bạn đã trúng "${item}"!`;
-            document.getElementById("winnerModal").style.display = 'flex';
-            lastWinner = item;
-            return true;
+    // Tạo danh sách phần thưởng dựa trên xác suất
+    let prizePool = [];
+    items.forEach((item) => {
+        const { probability } = itemDegs[item];
+        const count = Math.round(probability * 100); // Tính số lần xuất hiện dựa trên xác suất
+        for (let i = 0; i < count; i++) {
+            prizePool.push(item);
         }
-        return false;
     });
+
+    // Lấy phần thưởng từ prizePool
+    const randomIndex = Math.floor(Math.random() * prizePool.length);
+    const selectedPrize = prizePool[randomIndex];
+
+    // Hiển thị phần thưởng đã trúng
+    document.getElementById("winnerMessage").innerText = `Bạn đã trúng "${selectedPrize}"!`;
+    document.getElementById("winnerModal").style.display = 'flex';
+    lastWinner = selectedPrize;
 }
+
 
 const animate = () => {
     if (pause) return;
@@ -134,7 +158,7 @@ const animate = () => {
     currentDeg += speed;
     drawWheel();
     requestAnimationFrame(animate);
-}
+};
 
 const spin = () => {
     if (speed !== 0) return;
@@ -149,49 +173,29 @@ const closeModal = () => {
     document.getElementById("winnerModal").style.display = 'none';
 };
 
-const deletePrize = () => {
-    if (lastWinner && items.includes(lastWinner)) {
-        items = items.filter(item => item !== lastWinner);
-        document.getElementById("giftTextarea").value = items.join("\n");
-        resetWheel();
-        closeModal();
-        lastWinner = null;
-    } else {
-        alert('Không có phần thưởng để xóa!');
+async function fetchPrizes() {
+    try {
+        const response = await fetch('get_gift.php');
+        const gifts = await response.json();
+        items = gifts.map(gift => gift.name); // Chuyển danh sách phần thưởng vào `items`
+        createWheel(); // Vẽ vòng quay với danh sách phần thưởng
+    } catch (error) {
+        console.error('Error fetching gifts:', error);
     }
-};
+}
 
-const uploadFile = () => {
-    const fileInput = document.getElementById("fileInput");
-    const file = fileInput.files[0];
-
-    if (!file) {
-        alert("Vui lòng chọn một file để tải lên!");
-        return;
-    }
-
-    const reader = new FileReader();
-    reader.onload = (event) => {
-        const content = event.target.result;
-        // Giả sử file chứa danh sách phần thưởng, mỗi phần thưởng trên một dòng
-        document.getElementById("giftTextarea").value = content;
-        createWheel(); // Cập nhật vòng quay sau khi tải danh sách mới
-    };
-    reader.readAsText(file);
-};
-
-const exportFile = () => {
-    const content = document.getElementById("giftTextarea").value;
-    const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "danh_sach_phan_thuong.txt"; // Tên file tải về
-    a.click();
-
-    // Hủy URL sau khi tải
-    URL.revokeObjectURL(url);
-};
-
-
+function updatePrize(prize) {
+    fetch('update_gift.php', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: `giftName=${encodeURIComponent(prize)}`,
+    })
+    .then(response => response.text())
+    .then(() => {
+        console.log(`Đã cập nhật số lượng cho phần thưởng ${prize}`);
+        fetchPrizes(); // Cập nhật lại danh sách phần thưởng
+    })
+    .catch(error => console.error('Error updating gift:', error));
+}
